@@ -483,8 +483,6 @@ class DataHandler:
                 conditions.append("user_id = %s " % self.db_adaptors[0].placeholder)
             sql += "AND ".join(conditions) + "ORDER BY id %s" % dire
             if count > 0:
-                if count > 20:
-                    count = 20
                 sql += " limit %d" % count
             sql += ";"
             args = list(filter(lambda a: a is not None, (asset_group_id, asset_id, user_id)))
@@ -793,6 +791,19 @@ class MysqlAdaptor(DbAdaptor):
     def open_db(self):
         """Open the DB"""
         import mysql.connector
+        
+        new_db = mysql.connector.connect(
+            host=self.db_addr,
+            port=self.db_port,
+            user=self.db_user,
+            password=self.db_pass,
+            charset='utf8'
+        )
+
+        new_cur = new_db.cursor()
+        new_cur.execute("CREATE DATABASE IF NOT EXISTS `" + self.db_name + "`;")
+        new_db.close()
+
         self.db = mysql.connector.connect(
             host=self.db_addr,
             port=self.db_port,
@@ -839,5 +850,5 @@ class MysqlAdaptor(DbAdaptor):
 
     def check_table_existence(self, tblname):
         """Check whether the table exists or not"""
-        sql = "show tables from %s like '%s';" % (self.db_name, tblname)
+        sql = "show tables from `%s` like '%s';" % (self.db_name, tblname)
         return self.handler.exec_sql(db_num=self.db_num, sql=sql)
